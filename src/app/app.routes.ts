@@ -1,15 +1,5 @@
-import { Router, Routes } from '@angular/router';
-import { inject } from '@angular/core';
-import { UserService } from './core/auth/services/user.service';
-import { map } from 'rxjs/operators';
-
-/**
- * Guard that requires authentication. Redirects to /login if not authenticated.
- */
-const requireAuth = () => {
-  const router = inject(Router);
-  return inject(UserService).isAuthenticated.pipe(map(isAuth => isAuth || router.createUrlTree(['/login'])));
-};
+import { Routes } from '@angular/router';
+import { requireAuth, requireGuest } from './core/auth/auth.guards';
 
 export const routes: Routes = [
   {
@@ -23,12 +13,12 @@ export const routes: Routes = [
   {
     path: 'login',
     loadComponent: () => import('./core/auth/auth.component'),
-    canActivate: [() => inject(UserService).isAuthenticated.pipe(map(isAuth => !isAuth))],
+    canActivate: [requireGuest],
   },
   {
     path: 'register',
     loadComponent: () => import('./core/auth/auth.component'),
-    canActivate: [() => inject(UserService).isAuthenticated.pipe(map(isAuth => !isAuth))],
+    canActivate: [requireGuest],
   },
   {
     path: 'settings',

@@ -66,21 +66,7 @@ export default class ArticleComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const slug = this.route.snapshot.params['slug'];
-    combineLatest([this.articleService.get(slug), this.commentsService.getAll(slug), this.userService.currentUser])
-      .pipe(
-        catchError(err => {
-          this.errors.set(err.errors || { error: ['Failed to load article'] });
-          return EMPTY;
-        }),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(([article, comments, currentUser]) => {
-        this.article.set(article);
-        this.comments.set(comments);
-        this.currentUser.set(currentUser);
-        this.canModify.set(currentUser?.username === article.author.username);
-      });
+    this.loadArticle(this.route.snapshot.params['slug']);
   }
 
   onToggleFavorite(favorited: boolean): void {
@@ -113,8 +99,14 @@ export default class ArticleComponent implements OnInit {
     this.articleService
       .delete(article.slug)
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        void this.router.navigate(['/']);
+      .subscribe({
+        next: () => {
+          void this.router.navigate(['/']);
+        },
+        error: errors => {
+          this.isDeleting.set(false);
+          this.errors.set(errors);
+        },
       });
   }
 
@@ -156,6 +148,24 @@ export default class ArticleComponent implements OnInit {
         error: errors => {
           this.deleteCommentErrors.set(errors);
         },
+      });
+  }
+
+  private loadArticle(slug: string): void {
+    this.errors.set(null);
+    combineLatest([this.articleService.get(slug), this.commentsService.getAll(slug), this.userService.currentUser])
+      .pipe(
+        catchError(err => {
+          this.errors.set(err.errors || { error: ['Failed to load article'] });
+          return EMPTY;
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(([article, comments, currentUser]) => {
+        this.article.set(article);
+        this.comments.set(comments);
+        this.currentUser.set(currentUser);
+        this.canModify.set(currentUser?.username === article.author.username);
       });
   }
 }
